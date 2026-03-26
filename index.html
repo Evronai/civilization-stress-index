@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="Civilization Stress Index Pro 2026 - Complete Dashboard with REAL World Bank APIs for Climate, Food, Social, Political, and Economic data">
+    <title>Civilization Stress Index Pro 2026 · Complete Dashboard with Real APIs</title>
+    
+    <!-- Self-hosted Inter font (no CDN) -->
+    <link rel="stylesheet" href="assets/css/fonts/inter.css">
+    
+    <!-- Self-hosted Font Awesome (no CDN) -->
+    <link rel="stylesheet" href="assets/css/fontawesome/all.min.css">
+    
+    <!-- Self-hosted D3.js, TopoJSON, Chart.js -->
+    <script src="assets/js/d3.min.js"></script>
+    <script src="assets/js/topojson.min.js"></script>
+    <script src="assets/js/chart.min.js"></script>
+    
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
+    
+    <style>
+    /* CSS Variables for theming */
+    :root {
+        --primary-dark: #0a192f;
+        --primary-blue: #112240;
+        --primary-light: #233554;
+        --accent-teal: #64ffda;
+        --accent-blue: #57cbff;
+        --accent-red: #ff5c7c;
+        --accent-orange: #ff9a56;
+        --accent-yellow: #ffd166;
+        --text-primary: #e6f1ff;
+        --text-secondary: #a8b2d1;
+        --text-muted: #8892b0;
+        --bg-dark: #0a192f;
+        --bg-card: #112240;
+        --bg-sidebar: #0d1b2a;
+        --border-color: #233554;
+        --success: #64ffda;
+        --warning: #ffd166;
+        --danger: #ff5c7c;
+        --info: #57cbff;
+        
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+        --shadow-glow: 0 0 20px rgba(100, 255, 218, 0.2);
+    }
+    
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        background: var(--bg-dark);
+        color: var(--text-primary);
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+    }
+    
+    .dashboard {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100%;
+    }
+    
+    @media (min-width: 768px) {
+        .dashboard {
+            flex-direction: row;
+        }
+    }
+    
+    /* Main content area */
+    .main-content {
+        background: var(--primary-dark);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+    }
+    
+    /* Map container */
+    #map-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        background: var(--primary-dark);
+        overflow: hidden;
+    }
+    
+    #map-svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: var(--primary-dark);
+    }
+    
+    .country {
+        fill: #1e2a3a;
+        stroke: var(--primary-dark);
+        stroke-width: 0.6;
+        transition: fill 0.2s;
+    }
+    
+    .country:hover {
+        fill: #2d3a4e;
+    }
+    
+    /* Tooltip */
+    .map-tooltip {
+        position: fixed;
+        background: #121826;
+        border: 1px solid #2a3440;
+        border-radius: 16px;
+        padding: 10px 14px;
+        pointer-events: none;
+        z-index: 1000;
+        font-size: 11px;
+        max-width: 220px;
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+    
+    .map-tooltip.hidden {
+        display: none;
+    }
+    
+    /* Loading states */
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        border-top-color: var(--accent-teal);
+        animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .api-status {
+        font-size: 8px;
+        margin-top: 6px;
+        padding: 3px 8px;
+        border-radius: 20px;
+        display: inline-block;
+    }
+    
+    .api-status.real {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+    }
+    
+    .api-status.fetching {
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+    }
+    
+    .api-status.error {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+    }
+    
+    .data-badge {
+        font-size: 6px;
+        padding: 2px 4px;
+        border-radius: 8px;
+        margin-left: 4px;
+    }
+    
+    .data-badge.real {
+        background: rgba(34, 197, 94, 0.2);
+        color: #166534;
+    }
+    
+    .data-badge.derived {
+        background: rgba(249, 115, 22, 0.2);
+        color: #9a3412;
+    }
+    
+    .data-badge.cached {
+        background: rgba(59, 130, 246, 0.2);
+        color: #1e40af;
+    }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Main map area -->
+        <div class="main-content">
+            <div class="tab-bar" id="tabBar">
+                <button class="tab-btn active" onclick="switchTab('map')">🗺 STRESS ATLAS</button>
+                <button class="tab-btn" onclick="switchTab('api')">🌐 API DATA SOURCES</button>
+                <button class="tab-btn" onclick="switchTab('historical')">📜 COLLAPSE ARCHIVE</button>
+            </div>
+            
+            <div class="tab-panel active" id="panel-map">
+                <div id="map-container">
+                    <div class="map-header">
+                        <h3>🌍 Civilization Stress Index Pro 2026</h3>
+                        <p>📡 <strong>REAL APIs:</strong> Open-Meteo Climate + World Bank (Food/GDP/Social/Political)</p>
+                        <div class="api-status real" id="apiStatus">✅ All APIs connected</div>
+                    </div>
+                    <svg id="map-svg"></svg>
+                    <div class="map-tooltip hidden" id="mapTooltip"></div>
+                    <div class="map-legend">
+                        <div class="legend-title">STRESS LEVEL</div>
+                        <div class="legend-gradient"></div>
+                        <div class="legend-labels">
+                            <span>Low (<65)</span>
+                            <span>Moderate (65-74)</span>
+                            <span>High (75-84)</span>
+                            <span>Critical (85+)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-panel hidden" id="panel-api">
+                <div class="api-panel">
+                    <h2>🌐 Real API Data Sources</h2>
+                    <div class="api-grid" id="apiGrid">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-panel hidden" id="panel-historical">
+                <div class="historical-panel">
+                    <h2>📜 Historical Collapse Archive</h2>
+                    <div class="historical-grid" id="historicalGrid">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar with metrics -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>CIVILIZATION STRESS INDEX <span class="badge-pro">PRO</span></h1>
+                <p class="subtitle">Real-time global stability analysis</p>
+                <div class="data-source-info">
+                    <span class="data-badge real">✓ REAL API</span>
+                    <span class="data-badge cached">📊 CACHED</span>
+                    <span class="data-badge derived">⚠️ FALLBACK</span>
+                </div>
+            </div>
+            
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Global Stress</div>
+                    <div class="kpi-value" id="globalStress">—</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Critical Regions</div>
+                    <div class="kpi-value" id="criticalCount">—</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Climate (REAL)</div>
+                    <div class="kpi-value" id="climateAvg">—</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Food (REAL)</div>
+                    <div class="kpi-value" id="foodAvg">—</div>
+                </div>
+            </div>
+            
+            <div class="stress-gauge">
+                <canvas id="stressGauge" width="120" height="120"></canvas>
+                <div class="gauge-value" id="gaugeValue">—</div>
+            </div>
+            
+            <div class="region-selector">
+                <h3>📍 SELECT REGION</h3>
+                <div class="region-buttons" id="regionButtons">
+                    <!-- Filled by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="region-detail" id="regionDetail">
+                <h3 id="regionName">Select a region</h3>
+                <div class="stress-meter">
+                    <div class="meter-track">
+                        <div class="meter-progress" id="stressBar"></div>
+                    </div>
+                    <div class="meter-labels">
+                        <span>Stress Index</span>
+                        <span id="stressValue">—</span>
+                    </div>
+                </div>
+                
+                <div class="indicator-grid" id="indicatorGrid">
+                    <!-- Filled by JavaScript -->
+                </div>
+                
+                <div class="api-source-info" id="apiSourceInfo">
+                    <p>📡 <strong>Data Sources:</strong> Loading...</p>
+                </div>
+            </div>
+            
+            <div class="export-panel">
+                <button class="export-btn" id="exportCSV">📥 Export CSV</button>
+                <button class="export-btn" id="exportJSON">📥 Export JSON</button>
+                <button class="refresh-btn" id="refreshData">🔄 Refresh Data</button>
+            </div>
+            
+            <div class="footer-note">
+                <p><strong>Civilization Stress Index Pro</strong> · All data from public APIs · No external CDNs</p>
+                <p class="github-link"><a href="https://github.com/yourusername/stress-dashboard-pro" target="_blank">View on GitHub</a> · <a href="https://gumroad.com/l/stress-dashboard-pro" target="_blank">Get Template ($197)</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="assets/js/dashboard.js"></script>
+    
+    <script>
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Civilization Stress Index Pro loading...');
+        // Initialize will be handled by dashboard.js
+    });
+    </script>
+</body>
+</html>

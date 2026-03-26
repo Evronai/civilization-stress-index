@@ -1,0 +1,14 @@
+/* Font Awesome - Self-hosted version */
+/* Download from: https://fontawesome.com/download */
+
+/* This is a placeholder. In production, download Font Awesome and replace this file. */
+
+/* Minimal icon set using Unicode fallbacks */
+.fa-refresh::before { content: "🔄"; }
+.fa-download::before { content: "📥"; }
+.fa-globe::before { content: "🌍"; }
+.fa-chart-line::before { content: "📈"; }
+.fa-database::before { content: "💾"; }
+.fa-exclamation-triangle::before { content: "⚠️"; }
+.fa-check-circle::before { content: "✅"; }
+.fa-spinner::before { content: "⏳"; }
