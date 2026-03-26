@@ -893,8 +893,7 @@ class UI {
                 })
                 .on('click', () => {
                     // Switch to this region
-                    STATE.currentRegion = regionName;
-                    this.updateRegionDetail();
+                    this.selectRegion(regionName);
                 });
 
             // Add region label
